@@ -72,7 +72,7 @@ export interface UserProfile {
     xp: number;
     level: number;
     credits: number;
-    plan_type: 'starter' | 'vip';
+    plan: 'free' | 'pro' | 'elite';
     vip_expires_at: string | null;
     streak_days: number;
     longest_streak: number;

@@ -28,8 +28,8 @@ const CreditLimitBanner: React.FC<CreditLimitBannerProps> = ({
     const isEmpty = credits === 0;
     const timeUntilReset = getTimeUntilReset();
 
-    // Don't show if VIP
-    if (profile?.plan_type === 'vip') {
+    // Don't show if PRO or ELITE
+    if (profile?.plan === 'pro' || profile?.plan === 'elite') {
         return null;
     }
 

@@ -20,7 +20,9 @@ const GamificationHeader: React.FC<GamificationHeaderProps> = ({ className, comp
     const { profile, levelInfo, xpProgress, rank, isLoading } = useGamification();
     const navigate = useNavigate();
 
-    const isVip = profile?.plan_type === 'vip';
+    const isElite = profile?.plan === 'elite';
+    const isPro = profile?.plan === 'pro';
+    const isPremium = isElite || isPro;
 
     if (isLoading) {
         return (
@@ -41,18 +43,25 @@ const GamificationHeader: React.FC<GamificationHeaderProps> = ({ className, comp
                 onClick={() => navigate('/profile')}
                 className={cn(
                     'flex items-center gap-2 px-3 py-1.5 rounded-full',
-                    isVip
+                    isElite
                         ? 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30'
-                        : 'bg-card/80 backdrop-blur-sm border border-border/50',
+                        : isPro 
+                            ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30'
+                            : 'bg-card/80 backdrop-blur-sm border border-border/50',
                     'hover:border-primary/50 hover:bg-card transition-all',
                     'cursor-pointer group',
                     className
                 )}
             >
-                {isVip ? (
+                {isElite ? (
                     <>
                         <Crown className="w-4 h-4 text-amber-400" />
-                        <span className="font-bold text-sm text-amber-400">VIP</span>
+                        <span className="font-bold text-sm text-amber-400">ELITE</span>
+                    </>
+                ) : isPro ? (
+                    <>
+                        <Crown className="w-4 h-4 text-emerald-400" />
+                        <span className="font-bold text-sm text-emerald-400">PRO</span>
                     </>
                 ) : (
                     <>
@@ -76,12 +85,19 @@ const GamificationHeader: React.FC<GamificationHeaderProps> = ({ className, comp
         <div className={cn('space-y-3', className)}>
             {/* VIP Badge or Level */}
             <div className="flex items-center gap-3">
-                {isVip ? (
+                {isElite ? (
                     <div className={cn(
                         'w-10 h-10 rounded-full flex items-center justify-center',
                         'bg-gradient-to-br from-amber-500/30 to-yellow-500/30 border border-amber-500/50'
                     )}>
                         <Crown className="w-5 h-5 text-amber-400" />
+                    </div>
+                ) : isPro ? (
+                    <div className={cn(
+                        'w-10 h-10 rounded-full flex items-center justify-center',
+                        'bg-gradient-to-br from-emerald-500/30 to-teal-500/30 border border-emerald-500/50'
+                    )}>
+                        <Crown className="w-5 h-5 text-emerald-400" />
                     </div>
                 ) : (
                     <div className={cn(
@@ -93,8 +109,10 @@ const GamificationHeader: React.FC<GamificationHeaderProps> = ({ className, comp
                 )}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                        {isVip ? (
-                            <span className="font-bold text-sm text-amber-400">VIP Member</span>
+                        {isElite ? (
+                            <span className="font-bold text-sm text-amber-400">Elite Member</span>
+                        ) : isPro ? (
+                            <span className="font-bold text-sm text-emerald-400">Pro Member</span>
                         ) : (
                             <>
                                 <span className="font-bold text-sm">
@@ -107,7 +125,7 @@ const GamificationHeader: React.FC<GamificationHeaderProps> = ({ className, comp
                         )}
                     </div>
                     {/* XP Progress Bar */}
-                    {!isVip && (
+                    {!isPremium && (
                         <>
                             <div className="mt-1 w-full h-1.5 bg-muted/50 rounded-full overflow-hidden">
                                 <div
@@ -129,7 +147,7 @@ const GamificationHeader: React.FC<GamificationHeaderProps> = ({ className, comp
                 <div className="flex items-center gap-1.5">
                     <Coins className="w-4 h-4 text-amber-400" />
                     <span className="font-bold">
-                        {isVip ? '∞' : (profile?.credits || 0)}
+                        {isPremium ? '∞' : (profile?.credits || 0)}
                     </span>
                     <span className="text-muted-foreground">
                         {language === 'pt' ? 'créditos' : 'credits'}

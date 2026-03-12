@@ -58,7 +58,7 @@ export interface UserProfile {
     xp: number;
     level: number;
     credits: number;
-    plan_type: 'starter' | 'vip' | 'pro';
+    plan: 'free' | 'pro' | 'elite';
     vip_expires_at: string | null;
     streak_days: number;
     longest_streak: number;
@@ -128,7 +128,6 @@ function getSessionId(): string {
 }
 
 // Helper to map DB profile to UserProfile interface
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapProfile(data: any): UserProfile {
     return {
         id: data.id,
@@ -138,7 +137,7 @@ function mapProfile(data: any): UserProfile {
         xp: data.xp || 0,
         level: data.level || 1,
         credits: data.credits || 0,
-        plan_type: (data.plan === 'pro' || data.plan === 'elite') ? 'vip' : 'starter',
+        plan: data.plan || 'free',
         vip_expires_at: data.vip_expires_at,
         streak_days: data.streak_days || 0,
         longest_streak: data.longest_streak || 0,
@@ -424,7 +423,7 @@ export async function canSpendCredits(cost: number): Promise<boolean> {
     if (!profile) return false;
 
     // VIP has unlimited
-    if (profile.plan_type === 'vip' || profile.plan_type === 'pro') return true;
+    if (profile.plan === 'elite' || profile.plan === 'pro') return true;
 
     return profile.credits >= cost;
 }
@@ -451,7 +450,7 @@ export async function getCreditsBalance(): Promise<number> {
 
 export function isVipUser(profile: UserProfile | null): boolean {
     if (!profile) return false;
-    if (profile.plan_type !== 'vip' && profile.plan_type !== 'pro') return false;
+    if (profile.plan !== 'elite' && profile.plan !== 'pro') return false;
 
     // Check expiration
     if (profile.vip_expires_at) {

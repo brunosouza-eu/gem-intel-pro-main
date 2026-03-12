@@ -1,0 +1,537 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Gem Intel Design System - Dark Trading Theme */
+
+@layer base {
+  /* ═══ LIGHT THEME (default) ═══ */
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 92%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 47 96% 53%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 89%;
+    --input: 220 13% 89%;
+    --ring: 142 76% 36%;
+
+    --radius: 0.625rem;
+
+    /* Custom Gem Intel tokens */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 47 96% 53%;
+    --warning-foreground: 222 47% 11%;
+
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    --gem-observacao: 199 89% 48%;
+    --gem-acumulacao: 280 67% 55%;
+    --gem-gatilho: 47 96% 53%;
+    --gem-andamento: 142 76% 36%;
+
+    --score-low: 0 84% 60%;
+    --score-medium: 47 96% 53%;
+    --score-high: 142 76% 36%;
+
+    /* Cores das aulas do curso Trade Master */
+    --green:     #4ade80;
+    --green2:    #22c55e;
+    --red:       #e8394a;
+    --gold:      #f0a500;
+    --amber:     #f59e0b;
+    --bright:    #3d8fef;
+    --cyan:      #00c4e8;
+    --purple:    #9c27b0;
+    --gray1:     #334155;
+    --gray2:     #64748b;
+    --gray3:     #607d8b;
+    --font-mono: monospace;
+
+    --gradient-glow: linear-gradient(135deg, hsl(142 76% 36% / 0.15), hsl(199 89% 48% / 0.15));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 98%));
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 142 76% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 95%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 220 13% 89%;
+    --sidebar-ring: 142 76% 36%;
+  }
+
+  /* ═══ DARK THEME ═══ */
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 142 76% 45%;
+    --primary-foreground: 222 47% 6%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 55%;
+
+    --accent: 47 96% 53%;
+    --accent-foreground: 222 47% 6%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 18%;
+    --input: 217 33% 18%;
+    --ring: 142 76% 45%;
+
+    /* Dark-only overrides */
+    --gradient-glow: linear-gradient(135deg, hsl(142 76% 45% / 0.2), hsl(199 89% 48% / 0.2));
+    --gradient-card: linear-gradient(180deg, hsl(222 47% 10%), hsl(222 47% 6%));
+
+    --gray1:     #e2e8f0;
+    --gray2:     #94a3b8;
+
+    --sidebar-background: 222 47% 7%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 142 76% 45%;
+    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-accent: 217 33% 14%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 18%;
+    --sidebar-ring: 142 76% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  code,
+  pre,
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+  }
+
+  .glass-strong {
+    @apply bg-card/95 backdrop-blur-2xl border border-border;
+  }
+
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3), 0 0 40px hsl(var(--primary) / 0.1);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 20px hsl(var(--accent) / 0.3), 0 0 40px hsl(var(--accent) / 0.1);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-info;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 3px;
+  }
+}
+
+/* TradingView widget overrides */
+.tradingview-widget-container {
+  @apply rounded-lg overflow-hidden;
+}
+
+/* Custom animations */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--secondary)) 50%,
+      hsl(var(--muted)) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Radar score bar glow */
+@keyframes scoreGlow {
+
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+
+  50% {
+    filter: brightness(1.3);
+  }
+}
+
+.score-bar-glow {
+  animation: scoreGlow 2s ease-in-out infinite;
+}
+
+/* Card hover premium effect */
+.glass:hover {
+  background: hsl(var(--card) / 0.95);
+}
+
+/* Price change flash animations — Real-time trading */
+@keyframes priceFlash {
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.price-flash {
+  animation: priceFlash 0.3s ease;
+}
+
+@keyframes priceFlashUp {
+  0% {
+    text-shadow: none;
+  }
+
+  30% {
+    text-shadow: 0 0 8px rgba(52, 211, 153, 0.7);
+  }
+
+  100% {
+    text-shadow: none;
+  }
+}
+
+@keyframes priceFlashDown {
+  0% {
+    text-shadow: none;
+  }
+
+  30% {
+    text-shadow: 0 0 8px rgba(248, 113, 113, 0.7);
+  }
+
+  100% {
+    text-shadow: none;
+  }
+}
+
+.price-flash-up {
+  animation: priceFlashUp 0.6s ease-out;
+}
+
+.price-flash-down {
+  animation: priceFlashDown 0.6s ease-out;
+}
+
+/* Live indicator glow */
+@keyframes liveGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 3px rgba(52, 211, 153, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
+  }
+}
+
+.live-glow {
+  animation: liveGlow 2s ease-in-out infinite;
+}
+
+/* Smooth tab transitions */
+[role="tablist"] button {
+  transition: all 0.2s ease;
+}
+
+/* Status badge hover */
+.status-badge {
+  transition: all 0.2s ease;
+}
+
+.status-badge:hover {
+  transform: scale(1.05);
+}
+
+
+
+/* Shimmer animation for skeleton loading */
+.shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Hide scrollbar for filter tabs */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ═══════════════════════════════════════════════════════ */
+/* Markdown Body — Chat AI Response Styling               */
+/* ═══════════════════════════════════════════════════════ */
+.markdown-body {
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: hsl(var(--foreground) / 0.9);
+  max-width: none;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.markdown-body>*:first-child {
+  margin-top: 0;
+}
+
+/* ── Headings ── */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+  color: hsl(var(--foreground));
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+
+.markdown-body h1 {
+  font-size: 1.15rem;
+  border-bottom: 1px solid hsl(var(--primary) / 0.25);
+  padding-bottom: 0.5rem;
+}
+
+.markdown-body h2 {
+  font-size: 1.05rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.2);
+  padding-bottom: 0.4rem;
+}
+
+.markdown-body h3 {
+  font-size: 0.95rem;
+  color: hsl(var(--primary));
+}
+
+/* ── Paragraphs ── */
+.markdown-body p {
+  margin-top: 0.6rem;
+  margin-bottom: 0.6rem;
+  line-height: 1.75;
+}
+
+/* ── Bold / Italic ── */
+.markdown-body strong {
+  color: hsl(var(--primary));
+  font-weight: 600;
+}
+
+.markdown-body em {
+  color: hsl(var(--muted-foreground));
+}
+
+/* ── Lists ── */
+.markdown-body ul,
+.markdown-body ol {
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-left: 1.5rem;
+}
+
+.markdown-body ul {
+  list-style-type: disc;
+}
+
+.markdown-body ol {
+  list-style-type: decimal;
+}
+
+.markdown-body li {
+  margin-top: 0.35rem;
+  margin-bottom: 0.35rem;
+  line-height: 1.65;
+}
+
+.markdown-body li::marker {
+  color: hsl(var(--primary));
+}
+
+/* ── Horizontal Rules ── */
+.markdown-body hr {
+  border: none;
+  border-top: 1px solid hsl(var(--border) / 0.3);
+  margin: 1.5rem 0;
+}
+
+/* ── Code ── */
+.markdown-body code {
+  font-size: 0.8rem;
+  background: hsl(var(--background) / 0.5);
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.markdown-body pre {
+  background: hsl(var(--background) / 0.7);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+
+.markdown-body pre code {
+  background: none;
+  padding: 0;
+}
+
+/* ── Tables ── */
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.8rem;
+}
+
+.markdown-body th {
+  text-align: left;
+  color: hsl(var(--primary));
+  font-weight: 600;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 2px solid hsl(var(--border));
+}
+
+.markdown-body td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.3);
+}
+
+.markdown-body tr:hover td {
+  background: hsl(var(--muted) / 0.3);
+}
+
+/* ── Blockquotes ── */
+.markdown-body blockquote {
+  border-left: 3px solid hsl(var(--primary) / 0.4);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: hsl(var(--muted-foreground));
+  font-style: normal;
+}
+
+/* ── Links ── */
+.markdown-body a {
+  color: hsl(var(--primary));
+  text-decoration: none;
+}
+
+.markdown-body a:hover {
+  text-decoration: underline;
+}

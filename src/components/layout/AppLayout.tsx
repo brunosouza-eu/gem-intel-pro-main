@@ -147,18 +147,20 @@ const AppLayout = () => {
         )}
 
         <AutoPilotIndicator />
-        
-        <Button
-          onClick={() => window.dispatchEvent(new Event('open-support-chat'))}
-          variant="outline"
-          size="sm"
-          className="w-full justify-start text-emerald-500 border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 hover:text-emerald-400"
-        >
-          <Headphones className="w-4 h-4 mr-2" />
-          Suporte Inteligente (IA)
-        </Button>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.dispatchEvent(new Event('open-support-chat'))}
+            className="relative h-8 w-8 p-0 rounded-full bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 hover:text-amber-400 group"
+            title="Suporte Inteligente IA"
+          >
+            <Headphones className="w-4 h-4 transition-transform group-hover:scale-110" />
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-[7px] font-black flex items-center justify-center text-white border border-background">
+              IA
+            </span>
+          </Button>
           <ThemeToggle />
           <InstallPWAButton variant="icon" />
           <Button

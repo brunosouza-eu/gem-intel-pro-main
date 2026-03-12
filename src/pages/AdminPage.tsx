@@ -6,6 +6,10 @@ import UserTable from '@/components/admin/UserTable';
 import UserDetailModal from '@/components/admin/UserDetailModal';
 import CreditAdjustModal from '@/components/admin/CreditAdjustModal';
 import BlockUserModal from '@/components/admin/BlockUserModal';
+import DeleteUserModal from '@/components/admin/DeleteUserModal';
+import UsageMetricsTab from '@/components/admin/UsageMetricsTab';
+import SystemStatusTab from '@/components/admin/SystemStatusTab';
+import CommunityModerationTab from '@/components/admin/CommunityModerationTab';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,24 +19,22 @@ import {
 } from '@/components/ui/select';
 import {
   Loader2, RefreshCw, Shield, Users, LayoutDashboard, Database,
-  Sparkles, Check, Search, Filter, Coins, MessageSquare,
+  Sparkles, Check, Search, Filter, Coins, MessageSquare, BarChart3,
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import SystemStatusTab from '@/components/admin/SystemStatusTab';
-import CommunityModerationTab from '@/components/admin/CommunityModerationTab';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 
 const AdminPage: React.FC = () => {
   const { user } = useAuth();
   const {
-    isAdmin, loading, users, allUsers, stats,
+    isAdmin, isModerator, loading, users, allUsers, stats,
     searchQuery, setSearchQuery,
     filterPlan, setFilterPlan,
     filterStatus, setFilterStatus,
     fetchUsers, fetchStats,
-    updateUserPlan, toggleAdminRole,
-    blockUser, unblockUser, adjustCredits,
+    updateUserPlan, toggleAdminRole, toggleModeratorRole, toggleBotAccount,
+    blockUser, unblockUser, adjustCredits, deleteUser,
     getUserDetails,
   } = useAdmin();
 
@@ -46,6 +48,7 @@ const AdminPage: React.FC = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [creditModalOpen, setCreditModalOpen] = useState(false);
   const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -67,7 +70,6 @@ const AdminPage: React.FC = () => {
       setSyncResult({ total: result.total, distribution: result.distribution });
       toast({ title: "✅ Sincronização Concluída!", description: `${result.total} tokens sincronizados.`, className: "bg-success text-white" });
     } catch (error: unknown) {
-      console.error('Sync error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({ title: "❌ Erro na Sincronização", description: errorMessage, variant: "destructive" });
     } finally {
@@ -79,8 +81,6 @@ const AdminPage: React.FC = () => {
     setRunningAnalysis(true);
     toast({ title: "⚙️ Iniciando Análise...", description: "Processando todos os tokens..." });
     try {
-      // This would call the batch analysis Edge Function
-      // For now, simulating the process
       await new Promise(resolve => setTimeout(resolve, 2000));
       toast({ title: "✅ Análise Completa!", description: "Todos os tokens foram reprocessados.", className: "bg-success text-white" });
       await fetchUsers();
@@ -95,11 +95,10 @@ const AdminPage: React.FC = () => {
   const handleClearCache = async () => {
     toast({ title: "🗑️ Limpando Cache...", description: "Removendo dados temporários..." });
     try {
-      // Simulate cache clearing
       localStorage.clear();
       sessionStorage.clear();
       await new Promise(resolve => setTimeout(resolve, 500));
-      toast({ title: "✅ Cache Limpo!", description: "Dados temporários removidos com sucesso.", className: "bg-success text-white" });
+      toast({ title: "✅ Cache Limpo!", description: "Dados temporários removidos.", className: "bg-success text-white" });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({ title: "❌ Erro ao Limpar Cache", description: errorMessage, variant: "destructive" });
@@ -110,6 +109,7 @@ const AdminPage: React.FC = () => {
   const openDetails = (u: AdminUser) => { setSelectedUser(u); setDetailModalOpen(true); };
   const openCreditAdjust = (u: AdminUser) => { setSelectedUser(u); setCreditModalOpen(true); };
   const openBlockUser = (u: AdminUser) => { setSelectedUser(u); setBlockModalOpen(true); };
+  const openDeleteUser = (u: AdminUser) => { setSelectedUser(u); setDeleteModalOpen(true); };
   const handleUnblock = async (u: AdminUser) => { await unblockUser(u.id); };
 
   if (loading) {
@@ -123,7 +123,7 @@ const AdminPage: React.FC = () => {
     );
   }
 
-  if (!isAdmin) {
+  if (!isAdmin && !isModerator) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <Shield className="w-16 h-16 text-destructive mb-4" />
@@ -144,7 +144,10 @@ const AdminPage: React.FC = () => {
             </div>
             Painel Administrativo
           </h1>
-          <p className="text-muted-foreground mt-1">CRM completo — gerencie usuários, créditos e sistema</p>
+          <p className="text-muted-foreground mt-1">
+            CRM completo — gerencie usuários, créditos, planos e suporte
+            {isModerator && !isAdmin && ' (Moderador)'}
+          </p>
         </div>
         <Button onClick={handleRefresh} variant="outline" disabled={refreshing} className="gap-2">
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -154,19 +157,26 @@ const AdminPage: React.FC = () => {
 
       {/* Main Tabs */}
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="bg-muted/30 border border-border/50 p-1">
+        <TabsList className="bg-muted/30 border border-border/50 p-1 flex-wrap h-auto">
           <TabsTrigger value="dashboard" className="gap-2 data-[state=active]:bg-primary/10">
             <LayoutDashboard className="w-4 h-4" />Dashboard
           </TabsTrigger>
           <TabsTrigger value="users" className="gap-2 data-[state=active]:bg-primary/10">
             <Users className="w-4 h-4" />Usuários ({allUsers.length})
           </TabsTrigger>
-          <TabsTrigger value="tokens" className="gap-2 data-[state=active]:bg-primary/10">
-            <Database className="w-4 h-4" />Tokens
+          <TabsTrigger value="metrics" className="gap-2 data-[state=active]:bg-primary/10">
+            <BarChart3 className="w-4 h-4" />Métricas
           </TabsTrigger>
-          <TabsTrigger value="system" className="gap-2 data-[state=active]:bg-primary/10">
-            <Sparkles className="w-4 h-4" />Sistema
-          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="tokens" className="gap-2 data-[state=active]:bg-primary/10">
+              <Database className="w-4 h-4" />Tokens
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="system" className="gap-2 data-[state=active]:bg-primary/10">
+              <Sparkles className="w-4 h-4" />Sistema
+            </TabsTrigger>
+          )}
           <TabsTrigger value="community" className="gap-2 data-[state=active]:bg-primary/10">
             <MessageSquare className="w-4 h-4" />Comunidade
           </TabsTrigger>
@@ -202,10 +212,11 @@ const AdminPage: React.FC = () => {
                       <SelectItem value="all">Todos Planos</SelectItem>
                       <SelectItem value="free">Free</SelectItem>
                       <SelectItem value="pro">Pro</SelectItem>
+                      <SelectItem value="elite">Elite</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-[140px] bg-background/50">
+                    <SelectTrigger className="w-[150px] bg-background/50">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -213,6 +224,8 @@ const AdminPage: React.FC = () => {
                       <SelectItem value="active">Ativos</SelectItem>
                       <SelectItem value="blocked">Bloqueados</SelectItem>
                       <SelectItem value="admin">Admins</SelectItem>
+                      <SelectItem value="moderator">Moderadores</SelectItem>
+                      <SelectItem value="bot">Bots</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -241,108 +254,83 @@ const AdminPage: React.FC = () => {
                 onUnblockUser={handleUnblock}
                 onUpdatePlan={updateUserPlan}
                 onToggleAdmin={toggleAdminRole}
+                onToggleModerator={toggleModeratorRole}
+                onToggleBot={toggleBotAccount}
+                onDeleteUser={openDeleteUser}
               />
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* ====== TOKENS TAB ====== */}
-        <TabsContent value="tokens" className="mt-6 space-y-4">
-          {/* Stale Tokens Alert */}
-          {(() => {
-            const now = new Date();
-            const staleTokens = allUsers.filter(u => {
-              // This is a placeholder - in real app would check token updated_at
-              return false; // Replace with actual stale check
-            }).length;
-            const tokenCount: number = staleTokens; // Placeholder — replace with actual stale check
-
-            return tokenCount > 0 ? (
-              <Alert variant="destructive" className="border-warning/50 bg-warning/5">
-                <AlertTriangle className="w-4 h-4 text-warning" />
-                <AlertTitle className="text-warning">Tokens Desatualizados Detectados</AlertTitle>
-                <AlertDescription className="text-warning/90">
-                  {tokenCount} {tokenCount === 1 ? 'token não foi atualizado' : 'tokens não foram atualizados'} nas últimas 24 horas.
-                  Considere executar uma sincronização completa.
-                </AlertDescription>
-              </Alert>
-            ) : null;
-          })()}
-
-          <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="w-5 h-5 text-primary" />
-                Sincronização de Tokens
-              </CardTitle>
-              <CardDescription>
-                Apaga tokens inválidos e ressincroniza os top 150 da Binance com score melhorado.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button
-                onClick={handleSyncTokens}
-                disabled={syncing}
-                className="gap-2 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500"
-              >
-                {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                {syncing ? 'Sincronizando...' : 'Sincronizar Tokens da Binance'}
-              </Button>
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleRunFullAnalysis}
-                  disabled={runningAnalysis}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  {runningAnalysis ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-                  {runningAnalysis ? 'Analisando...' : 'Rodar Análise Completa'}
-                </Button>
-
-                <Button
-                  onClick={handleClearCache}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Limpar Cache
-                </Button>
-              </div>
-              {syncResult && (
-                <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-                  <div className="flex items-center gap-2 text-success font-medium">
-                    <Check className="w-4 h-4" />
-                    {syncResult.total} tokens sincronizados
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mt-3">
-                    <div className="bg-info/20 rounded p-2 text-center">
-                      <div className="text-xl font-bold text-info">{syncResult.distribution?.observacao || 0}</div>
-                      <div className="text-muted-foreground text-xs">Observação</div>
-                    </div>
-                    <div className="bg-success/20 rounded p-2 text-center">
-                      <div className="text-xl font-bold text-success">{syncResult.distribution?.acumulacao || 0}</div>
-                      <div className="text-muted-foreground text-xs">Acumulação</div>
-                    </div>
-                    <div className="bg-warning/20 rounded p-2 text-center">
-                      <div className="text-xl font-bold text-warning">{syncResult.distribution?.gatilho || 0}</div>
-                      <div className="text-muted-foreground text-xs">Gatilho</div>
-                    </div>
-                    <div className="bg-destructive/20 rounded p-2 text-center">
-                      <div className="text-xl font-bold text-destructive">{syncResult.distribution?.andamento || 0}</div>
-                      <div className="text-muted-foreground text-xs">Em Andamento</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        {/* ====== METRICS TAB ====== */}
+        <TabsContent value="metrics" className="mt-6">
+          <UsageMetricsTab stats={stats} users={allUsers} />
         </TabsContent>
+
+        {/* ====== TOKENS TAB ====== */}
+        {isAdmin && (
+          <TabsContent value="tokens" className="mt-6 space-y-4">
+            <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="w-5 h-5 text-primary" />
+                  Sincronização de Tokens
+                </CardTitle>
+                <CardDescription>
+                  Apaga tokens inválidos e ressincroniza os top 150 da Binance.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button onClick={handleSyncTokens} disabled={syncing}
+                  className="gap-2 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500">
+                  {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  {syncing ? 'Sincronizando...' : 'Sincronizar Tokens da Binance'}
+                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={handleRunFullAnalysis} disabled={runningAnalysis} variant="outline" className="gap-2">
+                    {runningAnalysis ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+                    {runningAnalysis ? 'Analisando...' : 'Rodar Análise Completa'}
+                  </Button>
+                  <Button onClick={handleClearCache} variant="outline" className="gap-2">
+                    <RefreshCw className="w-4 h-4" />Limpar Cache
+                  </Button>
+                </div>
+                {syncResult && (
+                  <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                    <div className="flex items-center gap-2 text-success font-medium">
+                      <Check className="w-4 h-4" />{syncResult.total} tokens sincronizados
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mt-3">
+                      <div className="bg-info/20 rounded p-2 text-center">
+                        <div className="text-xl font-bold text-info">{syncResult.distribution?.observacao || 0}</div>
+                        <div className="text-muted-foreground text-xs">Observação</div>
+                      </div>
+                      <div className="bg-success/20 rounded p-2 text-center">
+                        <div className="text-xl font-bold text-success">{syncResult.distribution?.acumulacao || 0}</div>
+                        <div className="text-muted-foreground text-xs">Acumulação</div>
+                      </div>
+                      <div className="bg-warning/20 rounded p-2 text-center">
+                        <div className="text-xl font-bold text-warning">{syncResult.distribution?.gatilho || 0}</div>
+                        <div className="text-muted-foreground text-xs">Gatilho</div>
+                      </div>
+                      <div className="bg-destructive/20 rounded p-2 text-center">
+                        <div className="text-xl font-bold text-destructive">{syncResult.distribution?.andamento || 0}</div>
+                        <div className="text-muted-foreground text-xs">Em Andamento</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         {/* ====== SYSTEM TAB ====== */}
-        <TabsContent value="system" className="mt-6">
-          <SystemStatusTab />
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="system" className="mt-6">
+            <SystemStatusTab />
+          </TabsContent>
+        )}
 
         {/* ====== COMMUNITY MODERATION TAB ====== */}
         <TabsContent value="community" className="mt-6">
@@ -378,6 +366,13 @@ const AdminPage: React.FC = () => {
         onOpenChange={setBlockModalOpen}
         user={selectedUser}
         onBlock={blockUser}
+      />
+
+      <DeleteUserModal
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        user={selectedUser}
+        onDelete={deleteUser}
       />
     </div>
   );

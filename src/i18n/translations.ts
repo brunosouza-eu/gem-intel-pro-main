@@ -335,7 +335,7 @@ export const translations = {
     // Elite plan features
     feat_elite_1: "200 créditos diários",
     feat_elite_2: "Tudo do plano Pro",
-    feat_elite_3: "Prioridade no suporte",
+    feat_elite_3: "Suporte VIP 24/7 + atendimento humano",
     feat_elite_4: "Chat IA Ilimitado",
     feat_elite_5: "Alertas Avançados",
     feat_elite_6: "Relatórios de Baleias",

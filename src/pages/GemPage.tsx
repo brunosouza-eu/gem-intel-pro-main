@@ -185,9 +185,30 @@ const GemPage = () => {
 
   // Fetch token data
   useEffect(() => {
-    if (id) fetchToken();
+    if (id) {
+      fetchToken();
+      
+      // Auto-refresh every 30 seconds, same as RadarPage
+      const interval = setInterval(() => {
+        if (!analyzing) {
+          fetchTokenSilent();
+        }
+      }, 30000);
+      
+      return () => clearInterval(interval);
+    }
     if (searchParams.get('refresh')) setSearchParams({}, { replace: true });
-  }, [id, searchParams]);
+  }, [id, searchParams, analyzing]);
+
+  const fetchTokenSilent = async () => {
+    try {
+      const { data, error } = await supabase.from('tokens').select('*').eq('id', id).single();
+      if (!error && data) {
+        setToken(data);
+        if (data.ticker) fetchMarketDataSilent(data.ticker);
+      }
+    } catch (e) {}
+  };
 
   const fetchToken = async () => {
     try {
@@ -943,8 +964,29 @@ const GemPage = () => {
             )}
 
             <div className="flex justify-end gap-2 flex-wrap">
-              <Button variant="outline"><Copy className="w-4 h-4 mr-2" /> Copiar Setup</Button>
-              <Button variant="outline"><Share2 className="w-4 h-4 mr-2" /> Compartilhar</Button>
+              <Button variant="outline" onClick={() => {
+                if (!ai) return;
+                const text = `🎯 Setup de Trade - ${token?.ticker || 'Ativo'}\n\n` +
+                  `Direção: ${ai.setup.direction}\n` +
+                  `Entrada: ${ai.setup.entry_zone}\n` +
+                  `Stop Loss: $${ai.setup.stop_loss}\n` +
+                  `Alvos: ${ai.setup.take_profit.map(tp => '$' + tp).join(', ')}\n` +
+                  `Risco/Retorno: ${ai.setup.risk_reward}\n\n` +
+                  `Validação: ${ai.setup.validation}\n` +
+                  `\nGerado por Gem Intel Pro`;
+                navigator.clipboard.writeText(text);
+                toast({ title: "Setup copiado! 📋", description: "O setup foi copiado para a área de transferência." });
+              }}>
+                <Copy className="w-4 h-4 mr-2" /> Copiar Setup
+              </Button>
+              <Button variant="outline" onClick={() => {
+                if (!ai) return;
+                const text = `Confira a análise profissional do ${token?.ticker || 'ativo'} gerada no Gem Intel Pro!\nScore: ${ai.summary.score}/100 | Risco: ${ai.summary.risk_level}\n\nRecomendação: ${ai.summary.recommendation}\n\nhttps://www.gemintelpro.com`;
+                navigator.clipboard.writeText(text);
+                toast({ title: "Link copiado! 🔗", description: "O resumo da análise foi copiado para a área de transferência." });
+              }}>
+                <Share2 className="w-4 h-4 mr-2" /> Compartilhar
+              </Button>
               <Button 
                 variant="outline"
                 onClick={() => {

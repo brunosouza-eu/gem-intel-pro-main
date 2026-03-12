@@ -38,6 +38,20 @@ const SwingDashboard: React.FC<SwingDashboardProps> = ({ analysis, onAnalysisUpd
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [flashClass, setFlashClass] = useState('');
+  const prevPriceRef = React.useRef(realtimePrice);
+
+  React.useEffect(() => {
+    if (realtimePrice && prevPriceRef.current && prevPriceRef.current !== realtimePrice) {
+      const isUp = realtimePrice > prevPriceRef.current;
+      setFlashClass(isUp ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10');
+      const timer = setTimeout(() => setFlashClass(''), 1000);
+      prevPriceRef.current = realtimePrice;
+      return () => clearTimeout(timer);
+    }
+    if (realtimePrice) prevPriceRef.current = realtimePrice;
+  }, [realtimePrice]);
+
 
   // Freshness calculation - simplified for UI clarity
   const isFresh = analysis?.updated_at
@@ -230,7 +244,10 @@ const SwingDashboard: React.FC<SwingDashboardProps> = ({ analysis, onAnalysisUpd
               <span className="text-xs text-muted-foreground font-normal">• {analysis.timeframe}</span>
             </h3>
             {(realtimePrice || analysis.current_price) && (
-              <p className="text-lg sm:text-xl font-mono font-semibold mt-0.5 truncate">
+              <p className={cn(
+                "text-lg sm:text-xl font-mono font-semibold mt-0.5 truncate transition-all duration-300 rounded px-1 -ml-1", 
+                flashClass
+              )}>
                 ${formatNumber(realtimePrice || analysis.current_price, (realtimePrice || analysis.current_price || 0) < 1 ? 6 : (realtimePrice || analysis.current_price || 0) < 100 ? 4 : 2)}
                 <span className={cn(
                   "text-sm ml-2",

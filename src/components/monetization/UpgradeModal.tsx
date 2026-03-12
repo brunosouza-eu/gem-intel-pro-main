@@ -7,7 +7,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useGamification } from '@/contexts/GamificationContext';
-import { getTimeUntilReset } from '@/lib/planService';
+import { getTimeUntilReset } from '@/lib/creditsService';
 import {
     X, Crown, Zap, Clock, AlertTriangle,
     CheckCircle, Sparkles, TrendingUp, Shield,

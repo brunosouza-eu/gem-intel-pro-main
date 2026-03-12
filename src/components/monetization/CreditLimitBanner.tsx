@@ -7,7 +7,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useGamification } from '@/contexts/GamificationContext';
-import { getTimeUntilReset } from '@/lib/planService';
+import { getTimeUntilReset } from '@/lib/creditsService';
 import { Coins, Clock, Crown, AlertTriangle, Zap } from 'lucide-react';
 
 interface CreditLimitBannerProps {
@@ -28,8 +28,8 @@ const CreditLimitBanner: React.FC<CreditLimitBannerProps> = ({
     const isEmpty = credits === 0;
     const timeUntilReset = getTimeUntilReset();
 
-    // Don't show if PRO or ELITE
-    if (profile?.plan === 'pro' || profile?.plan === 'elite') {
+    // Don't show if ELITE (they have unlimited credits)
+    if (profile?.plan === 'elite') {
         return null;
     }
 

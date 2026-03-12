@@ -422,8 +422,8 @@ export async function canSpendCredits(cost: number): Promise<boolean> {
     const profile = await getOrCreateProfile();
     if (!profile) return false;
 
-    // VIP has unlimited
-    if (profile.plan === 'elite' || profile.plan === 'pro') return true;
+    // ELITE has unlimited
+    if (profile.plan === 'elite') return true;
 
     return profile.credits >= cost;
 }
@@ -450,7 +450,8 @@ export async function getCreditsBalance(): Promise<number> {
 
 export function isVipUser(profile: UserProfile | null): boolean {
     if (!profile) return false;
-    if (profile.plan !== 'elite' && profile.plan !== 'pro') return false;
+    // Only Elite is exempt from credit costs
+    if (profile.plan !== 'elite') return false;
 
     // Check expiration
     if (profile.vip_expires_at) {

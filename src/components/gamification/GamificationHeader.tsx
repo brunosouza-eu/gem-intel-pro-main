@@ -147,7 +147,7 @@ const GamificationHeader: React.FC<GamificationHeaderProps> = ({ className, comp
                 <div className="flex items-center gap-1.5">
                     <Coins className="w-4 h-4 text-amber-400" />
                     <span className="font-bold">
-                        {isPremium ? '∞' : (profile?.credits || 0)}
+                        {isElite ? '∞' : (profile?.credits || 0)}
                     </span>
                     <span className="text-muted-foreground">
                         {language === 'pt' ? 'créditos' : 'credits'}

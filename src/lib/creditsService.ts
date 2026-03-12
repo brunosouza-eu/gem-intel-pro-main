@@ -59,7 +59,7 @@ export async function getCreditsBalance(): Promise<number> {
 
     if (!user) return 0;
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
         .from('profiles')
         .select('credits')
         .eq('id', user.id)
@@ -87,7 +87,7 @@ export async function spendCredits(
     metadata?: Record<string, unknown>
 ): Promise<{ success: boolean; newBalance: number; error?: string }> {
     try {
-        const { data, error } = await supabase.rpc('deduct_credits', {
+        const { data, error } = await (supabase as any).rpc('deduct_credits', {
             p_amount: amount,
             p_description: description || `Spent on ${source}`
         });
@@ -134,7 +134,7 @@ export async function getTransactionHistory(limit = 20): Promise<CreditTransacti
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
         .from('credit_transactions')
         .select('*')
         .eq('user_id', user.id)
@@ -154,7 +154,7 @@ export async function getTransactionHistory(limit = 20): Promise<CreditTransacti
  */
 export async function claimDailyLogin(): Promise<{ success: boolean; amount: number; error?: string }> {
     try {
-        const { data, error } = await supabase.rpc('claim_daily_login');
+        const { data, error } = await (supabase as any).rpc('claim_daily_login');
 
         if (error) throw error;
 
@@ -185,13 +185,13 @@ export async function addCredits(amount: number, source: string, description?: s
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, newBalance: 0 };
 
-    const { data: profile } = await supabase.from('profiles').select('credits').eq('id', user.id).single();
+    const { data: profile } = await (supabase as any).from('profiles').select('credits').eq('id', user.id).single();
     const current = profile?.credits || 0;
     const newBalance = current + amount;
 
-    await supabase.from('profiles').update({ credits: newBalance }).eq('id', user.id);
+    await (supabase as any).from('profiles').update({ credits: newBalance }).eq('id', user.id);
 
-    await supabase.from('credit_transactions').insert({
+    await (supabase as any).from('credit_transactions').insert({
         user_id: user.id,
         amount: amount,
         type: 'earn',
@@ -201,4 +201,24 @@ export async function addCredits(amount: number, source: string, description?: s
     });
 
     return { success: true, newBalance };
+}
+
+/**
+ * Get time until credits reset
+ */
+export function getTimeUntilReset(): { hours: number; minutes: number; formatted: string } {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+
+    const diff = tomorrow.getTime() - now.getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    return {
+        hours,
+        minutes,
+        formatted: `${hours}h ${minutes}m`,
+    };
 }

@@ -11,7 +11,7 @@ interface CryptoLogoProps {
  * CoinGecko image URLs follow the pattern:
  * https://assets.coingecko.com/coins/images/{ID}/small/{slug}.png
  */
-const COINGECKO_IDS: Record<string, { id: number; slug: string }> = {
+const COINGECKO_IDS: Record<string, { id: number; slug: string; ext?: string }> = {
   'BTC': { id: 1, slug: 'bitcoin' },
   'ETH': { id: 279, slug: 'ethereum' },
   'BNB': { id: 825, slug: 'binancecoin' },
@@ -96,6 +96,25 @@ const COINGECKO_IDS: Record<string, { id: number; slug: string }> = {
   'ALT': { id: 33985, slug: 'altlayer' },
   'DUSK': { id: 4092, slug: 'dusk-network' },
   'KSM': { id: 9258, slug: 'kusama' },
+
+  // Newly requested missing tokens
+  'W': { id: 35087, slug: 'W_Token_%283%29' },
+  'PNUT': { id: 51301, slug: 'Peanut_the_Squirrel' },
+  'BOME': { id: 36071, slug: 'bome' },
+  'XAI': { id: 34258, slug: 'round_icon_2048_px' },
+  'MAGIC': { id: 18623, slug: 'magic' },
+  'CATI': { id: 50236, slug: 'cati' },
+  'DYM': { id: 34182, slug: 'dym' },
+  'DOGS': { id: 39699, slug: 'dogs_logo_200x200' },
+  'TNSR': { id: 35972, slug: 'tnsr' },
+  'SAGA': { id: 25691, slug: 'zcPXETKs_400x400', ext: 'jpg' },
+  'HMSTR': { id: 39102, slug: 'hamster-removebg-preview' },
+  'PORTAL': { id: 35436, slug: 'portal', ext: 'jpeg' },
+  'PIXEL': { id: 35100, slug: 'pixel-icon' },
+  'PIXELS': { id: 35100, slug: 'pixel-icon' },
+  'NEIRO': { id: 39411, slug: 'logo_new_%281%29' }, // Neiro Ethereum (fallback)
+  'FIRST-NEIRO': { id: 49454, slug: 'neiro' },
+  'LISTA': { id: 38247, slug: 'lista_logo', ext: 'jpg' },
 };
 
 /**
@@ -123,7 +142,8 @@ const getCryptoLogoUrl = (symbol: string): string => {
   // Best source: CoinGecko with known numeric ID + slug
   const cg = COINGECKO_IDS[s];
   if (cg) {
-    return `https://assets.coingecko.com/coins/images/${cg.id}/small/${cg.slug}.png`;
+    const ext = cg.ext || 'png';
+    return `https://assets.coingecko.com/coins/images/${cg.id}/small/${cg.slug}.${ext}`;
   }
 
   // Primary fallback: CoinCap (works for most tickers)

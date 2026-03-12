@@ -418,7 +418,7 @@ const LandingPage: React.FC = () => {
                     </div>
 
                     <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-[1.05] tracking-tight mb-8 drop-shadow-2xl animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-150 fill-mode-both">
-                        <span className="block text-white">Domine o Mercado,</span>
+                        <span className="block text-white">Domine o Mercado Cripto,</span>
                         <span className="block bg-gradient-to-r from-emerald-400 via-cyan-400 to-emerald-400 bg-[length:200%_auto] animate-gradient bg-clip-text text-transparent pb-2">Sem Esforço.</span>
                     </h1>
 

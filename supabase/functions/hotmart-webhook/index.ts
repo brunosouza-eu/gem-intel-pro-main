@@ -28,22 +28,29 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
  */
 
 const OFFER_ACTIONS: Record<string, {
+  isSubscription?: boolean;
   plan?: 'pro' | 'elite';
   credits?: number;
   course?: boolean;
 }> = {
   // Pro Plans
-  '66pn89ja': { plan: 'pro', course: true },
-  'mcw7ajf5': { plan: 'pro', course: true },
+  '66pn89ja': { isSubscription: true, plan: 'pro', course: true },
+  'mcw7ajf5': { isSubscription: true, plan: 'pro', course: true },
+  
   // Elite Plans
-  '8rkh4vnv': { plan: 'elite', course: true },
-  'qg9w13pa': { plan: 'elite', course: true },
+  '8rkh4vnv': { isSubscription: true, plan: 'elite', course: true },
+  'qg9w13pa': { isSubscription: true, plan: 'elite', course: true },
+  
   // Credit Packs (+ course bonus)
-  'f7eld6ze': { credits: 30, course: true },
-  'g0shftr1': { credits: 100, course: true },
+  'f7eld6ze': { isSubscription: false, credits: 30, course: true },
+  'g0shftr1': { isSubscription: false, credits: 100, course: true },
+  
   // Standalone Course (+ 30 credits bonus)
-  'sj4n59vd': { credits: 30, course: true },
+  'sj4n59vd': { isSubscription: false, credits: 30, course: true },
 }
+
+const APPROVAL_EVENTS = ['PURCHASE_APPROVED', 'APPROVED']
+const REVOCATION_EVENTS = ['PURCHASE_REFUNDED', 'REFUNDED', 'PURCHASE_CHARGEBACK', 'CHARGEBACK']
 
 serve(async (req) => {
   // CORS preflight
@@ -70,7 +77,7 @@ serve(async (req) => {
 
     // ── 2. Parse Webhook Body ─────────────────────────────────
     const body = await req.json()
-    console.log("📦 Hotmart Webhook:", JSON.stringify(body, null, 2))
+    console.log("📦 Hotmart Webhook Event:", JSON.stringify(body, null, 2))
 
     // Support Hotmart Webhook v1.0 and v2.0 formats
     let event = ''
@@ -82,21 +89,24 @@ serve(async (req) => {
     if (body.event) {
       // v2.0
       event = body.event
-      buyerEmail = body.data?.buyer?.email?.toLowerCase()?.trim()
+      buyerEmail = body.data?.buyer?.email?.toLowerCase()?.trim() || ''
       buyerName = body.data?.buyer?.name || ''
       offerCode = body.data?.purchase?.offer?.code || body.data?.offer?.code || ''
       transactionId = body.data?.purchase?.transaction || ''
     } else {
       // v1.0
-      event = body.status === 'APPROVED' ? 'PURCHASE_APPROVED' : body.status
+      event = body.status || ''
       buyerEmail = (body.email || '').toLowerCase().trim()
       buyerName = body.name || ''
       offerCode = body.off || ''
       transactionId = body.transaction || ''
     }
 
-    // Only process approved purchases
-    if (event !== 'PURCHASE_APPROVED') {
+    // Only process approved or revoked purchases
+    const isApproval = APPROVAL_EVENTS.includes(event)
+    const isRevocation = REVOCATION_EVENTS.includes(event)
+
+    if (!isApproval && !isRevocation) {
       console.log(`ℹ️ Ignoring event: ${event}`)
       return new Response(JSON.stringify({ message: `Ignored: ${event}` }), { status: 200 })
     }
@@ -106,12 +116,80 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Missing email" }), { status: 400 })
     }
 
-    console.log(`✅ Processing purchase: email=${buyerEmail} offer=${offerCode} tx=${transactionId}`)
+    console.log(`✅ Processing event: ${event} | email=${buyerEmail} offer=${offerCode} tx=${transactionId}`)
 
     // ── 3. Connect to Supabase ────────────────────────────────
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
-    // ── 4. Record Pending Purchase ────────────────────────────
+    // ── 4. Locate or Register User ────────────────────────────
+    const { data: authUsers } = await supabase.auth.admin.listUsers()
+    const matchedUser = authUsers?.users?.find(
+      (u: any) => u.email?.toLowerCase()?.trim() === buyerEmail
+    )
+
+    // ==========================================
+    // FLUXO A: REVOGAÇÃO (Estorno / Chargeback)
+    // ==========================================
+    if (isRevocation) {
+      if (!matchedUser) {
+        console.log(`ℹ️ User not found for revocation ${buyerEmail}. Deleting any pending purchases.`)
+        await supabase.from('pending_purchases').delete().eq('email', buyerEmail).eq('offer_code', offerCode)
+        return new Response(JSON.stringify({ success: true, message: "Pending purchase removed." }), { status: 200 })
+      }
+
+      const userId = matchedUser.id
+      const action = OFFER_ACTIONS[offerCode]
+
+      if (!action) {
+        return new Response(JSON.stringify({ success: true, message: "Unknown offer code for revocation." }), { status: 200 })
+      }
+
+      // Fetch current profile to calculate deductions
+      const { data: profile } = await supabase.from('profiles').select('credits').eq('id', userId).single()
+      let updatePayload: any = {}
+      let deductCredits = action.credits || 0
+
+      if (action.isSubscription) {
+        updatePayload.plan = 'free'
+      }
+      
+      if (action.course) {
+        // Safe measure: if they refund anything with course access, we revoke it.
+        // If they had it from somewhere else, admin will have to restore it. 
+        updatePayload.has_course_access = false
+      }
+
+      if (Object.keys(updatePayload).length > 0) {
+        await supabase.from('profiles').update(updatePayload).eq('id', userId)
+      }
+
+      if (deductCredits > 0 && profile) {
+         const finalCredits = Math.max(0, (profile.credits || 0) - deductCredits)
+         await supabase.from('profiles').update({ credits: finalCredits }).eq('id', userId)
+         
+         await supabase.from('credit_transactions').insert({
+             user_id: userId,
+             amount: -deductCredits,
+             type: 'spend',
+             source: 'refund',
+             description: `Estorno Hotmart: ${offerCode}`,
+             balance_after: finalCredits
+         })
+      }
+
+      // Remove from pending to prevent future claims
+      await supabase.from('pending_purchases').delete().eq('email', buyerEmail).eq('offer_code', offerCode)
+
+      console.log(`✅ Revocation successful for ${buyerEmail}`)
+      return new Response(JSON.stringify({ success: true, message: "Refund processed" }), { status: 200 })
+    }
+
+
+    // ==========================================
+    // FLUXO B: APROVAÇÃO (Nova Compra)
+    // ==========================================
+    
+    // 4.1. Record Pending Purchase always
     const { error: insertError } = await supabase
       .from('pending_purchases')
       .insert({
@@ -122,17 +200,10 @@ serve(async (req) => {
       })
 
     if (insertError) {
-      console.error("⚠️ Insert error (may be duplicate):", insertError.message)
-      // Don't return error — might be a duplicate transaction, continue processing
+      console.error("⚠️ Insert pending_purchases error (may be duplicate):", insertError.message)
     }
 
-    // ── 5. Find user by email ─────────────────────────────────
-    // First check auth.users, then profiles
-    const { data: authUsers } = await supabase.auth.admin.listUsers()
-    const matchedUser = authUsers?.users?.find(
-      (u: any) => u.email?.toLowerCase()?.trim() === buyerEmail
-    )
-
+    // 4.2. If User is not registered yet, we stop here.
     if (!matchedUser) {
       console.log(`ℹ️ User not found yet for ${buyerEmail}. Purchase saved as pending.`)
       return new Response(JSON.stringify({
@@ -143,7 +214,7 @@ serve(async (req) => {
 
     const userId = matchedUser.id
 
-    // ── 6. Get current profile ────────────────────────────────
+    // 4.3. Get current profile
     const { data: profile } = await supabase
       .from('profiles')
       .select('id, plan, credits, has_course_access, email')
@@ -155,7 +226,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Profile not found" }), { status: 404 })
     }
 
-    // ── 7. Process ALL unclaimed purchases for this email ─────
+    // 4.4. Process ALL unclaimed purchases for this email
+    // This resolves cases where the user bought multiple items before creating the account!
     const { data: unclaimed } = await supabase
       .from('pending_purchases')
       .select('*')
@@ -163,7 +235,7 @@ serve(async (req) => {
       .eq('claimed', false)
 
     if (!unclaimed || unclaimed.length === 0) {
-      console.log("ℹ️ No unclaimed purchases (already processed)")
+      console.log("ℹ️ No unclaimed purchases (already processed earlier in this request tree)")
       return new Response(JSON.stringify({ success: true, message: "Already processed" }), { status: 200 })
     }
 
@@ -184,18 +256,17 @@ serve(async (req) => {
           }
         }
 
-        // Credits
+        // Add avulso credits permanently
         if (action.credits) {
           addCredits += action.credits
         }
 
-        // Course access
+        // Add course access permanently
         if (action.course) {
           giveCourse = true
         }
       } else {
-        console.warn(`⚠️ Unknown offer code: ${purchase.offer_code}`)
-        // Still grant course access for unknown codes as a safe default
+        console.warn(`⚠️ Unknown offer code: ${purchase.offer_code}. Granting safe default (Course).`)
         giveCourse = true
       }
 
@@ -210,7 +281,7 @@ serve(async (req) => {
         .eq('id', purchase.id)
     }
 
-    // ── 8. Update profile ─────────────────────────────────────
+    // 4.5. Update profile with accumulated rewards
     const finalCredits = (profile.credits || 0) + addCredits
 
     const { error: updateError } = await supabase
@@ -219,7 +290,7 @@ serve(async (req) => {
         plan: newPlan,
         credits: finalCredits,
         has_course_access: giveCourse,
-        email: buyerEmail, // Ensure email is stored
+        email: buyerEmail, // Ensure email explicitly matches
       })
       .eq('id', userId)
 
@@ -228,7 +299,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Failed to update profile" }), { status: 500 })
     }
 
-    // ── 9. Log credit transaction ─────────────────────────────
+    // 4.6. Log credit transaction if credits were given
     if (addCredits > 0) {
       await supabase
         .from('credit_transactions')
@@ -237,7 +308,7 @@ serve(async (req) => {
           amount: addCredits,
           type: 'earn',
           source: 'hotmart_purchase',
-          description: `Compra Hotmart: ${offerCode} (TX: ${transactionId})`,
+          description: `Pacote de Créditos / Bônus Hotmart (TXs combinadas)`,
           balance_after: finalCredits,
         })
     }

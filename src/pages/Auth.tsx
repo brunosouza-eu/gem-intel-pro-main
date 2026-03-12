@@ -123,7 +123,7 @@ const Auth = () => {
       return;
     }
 
-    if (mode === 'signup' && import.meta.env.VITE_PUBLIC_HCAPTCHA_SITE_KEY && !captchaToken) {
+    if ((mode === 'signup' || mode === 'login') && import.meta.env.VITE_PUBLIC_HCAPTCHA_SITE_KEY && !captchaToken) {
       toast({
         title: 'Verificação Necessária',
         description: 'Por favor, complete o CAPTCHA para continuar.',
@@ -151,7 +151,7 @@ const Auth = () => {
         }
       } else {
         const { error } = mode === 'login'
-          ? await signIn(email, password)
+          ? await signIn(email, password, captchaToken)
           : await signUp(email, password, captchaToken);
 
         if (error) {
@@ -165,10 +165,18 @@ const Auth = () => {
           if (mode === 'signup') {
             localStorage.setItem('last_signup_timestamp', Date.now().toString());
             setSignupCooldown(SIGNUP_COOLDOWN_SECONDS);
+            
+            toast({
+              title: t('signUpSuccess') as string,
+              description: t('verifyEmail') as string,
+            });
+            
+            setMode('login');
+            return;
           }
 
           toast({
-            title: mode === 'login' ? t('loginSuccess') as string : t('signUpSuccess') as string,
+            title: t('loginSuccess') as string,
           });
           navigate('/dashboard');
         }
@@ -386,7 +394,7 @@ const Auth = () => {
             </div>
           )}
 
-          {mode === 'signup' && import.meta.env.VITE_PUBLIC_HCAPTCHA_SITE_KEY && (
+          {(mode === 'signup' || mode === 'login') && import.meta.env.VITE_PUBLIC_HCAPTCHA_SITE_KEY && (
               <div className="mt-4 flex justify-center">
                   <HCaptcha
                     sitekey={import.meta.env.VITE_PUBLIC_HCAPTCHA_SITE_KEY}
@@ -400,7 +408,10 @@ const Auth = () => {
             <div className="mt-6 text-center">
               <button
                 type="button"
-                onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+                onClick={() => {
+                  setMode(mode === 'login' ? 'signup' : 'login');
+                  setCaptchaToken(''); // Reset captcha on mode change
+                }}
                 className="text-sm text-muted-foreground hover:text-primary transition-colors"
               >
                 {mode === 'login' ? t('noAccount') : t('hasAccount')}{' '}

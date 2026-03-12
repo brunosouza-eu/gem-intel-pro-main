@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Globe, Eye, EyeOff, ArrowLeft, ShieldAlert } from 'lucide-react';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { z } from 'zod';
+import { useRef } from 'react';
 
 // Login schema — backwards compatible (6 chars min)
 const loginSchema = z.object({
@@ -45,6 +46,7 @@ const Auth = () => {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [signupCooldown, setSignupCooldown] = useState(0);
   const [captchaToken, setCaptchaToken] = useState<string>('');
+  const captchaRef = useRef<HCaptcha>(null);
 
   const { signIn, signInWithGoogle, signUp, resetPassword, user } = useAuth();
   const { t, language, setLanguage } = useLanguage();
@@ -155,10 +157,16 @@ const Auth = () => {
           : await signUp(email, password, captchaToken);
 
         if (error) {
+          // Reset captcha on any error to prevent "already-seen-response"
+          setCaptchaToken('');
+          captchaRef.current?.resetCaptcha();
+
+          const isEmailNotConfirmed = error.message.toLowerCase().includes('email not confirmed');
+
           toast({
-            title: mode === 'login' ? t('loginError') as string : t('signUpError') as string,
-            description: error.message,
-            variant: 'destructive',
+            title: isEmailNotConfirmed ? '💎 ' + t('confirm') : (mode === 'login' ? t('loginError') as string : t('signUpError') as string),
+            description: isEmailNotConfirmed ? t('verifyEmail') as string : error.message,
+            variant: isEmailNotConfirmed ? 'default' : 'destructive',
           });
         } else {
           // Set signup cooldown
@@ -397,6 +405,7 @@ const Auth = () => {
           {(mode === 'signup' || mode === 'login') && import.meta.env.VITE_PUBLIC_HCAPTCHA_SITE_KEY && (
               <div className="mt-4 flex justify-center">
                   <HCaptcha
+                    ref={captchaRef}
                     sitekey={import.meta.env.VITE_PUBLIC_HCAPTCHA_SITE_KEY}
                     onVerify={(token) => setCaptchaToken(token)}
                     theme="dark"
@@ -410,7 +419,8 @@ const Auth = () => {
                 type="button"
                 onClick={() => {
                   setMode(mode === 'login' ? 'signup' : 'login');
-                  setCaptchaToken(''); // Reset captcha on mode change
+                  setCaptchaToken(''); 
+                  captchaRef.current?.resetCaptcha(); // Reset captcha on mode change
                 }}
                 className="text-sm text-muted-foreground hover:text-primary transition-colors"
               >

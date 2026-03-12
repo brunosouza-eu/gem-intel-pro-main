@@ -61,6 +61,12 @@ const SupportChat: React.FC = () => {
         if (isOpen && inputRef.current) inputRef.current.focus();
     }, [isOpen]);
 
+    useEffect(() => {
+        const handleOpen = () => setIsOpen(true);
+        window.addEventListener('open-support-chat', handleOpen);
+        return () => window.removeEventListener('open-support-chat', handleOpen);
+    }, []);
+
     // Don't show if not logged in
     if (!profile || !session) return null;
 
@@ -204,20 +210,6 @@ const SupportChat: React.FC = () => {
 
     return (
         <>
-            {/* Floating Button */}
-            {!isOpen && (
-                <button
-                    onClick={() => setIsOpen(true)}
-                    className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-br ${gradientFrom} ${gradientTo} text-white shadow-2xl shadow-${accentColor}-500/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 group`}
-                >
-                    <Headphones className="w-6 h-6" />
-                    <span className={`absolute inset-0 rounded-full bg-${accentColor}-500/30 animate-ping`} />
-                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-[9px] font-black flex items-center justify-center text-white border-2 border-background">
-                        AI
-                    </span>
-                </button>
-            )}
-
             {/* Chat Window */}
             {isOpen && (
                 <div className={`fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-6rem)] rounded-2xl shadow-2xl border border-${accentColor}-500/20 bg-card flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 zoom-in-95 duration-300`}>

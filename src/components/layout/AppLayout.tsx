@@ -24,11 +24,11 @@ import {
   Shield,
   Menu,
   X,
-  User,
   Users,
   Circle,
   Crosshair,
-  Flame
+  Flame,
+  Headphones
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -147,6 +147,16 @@ const AppLayout = () => {
         )}
 
         <AutoPilotIndicator />
+        
+        <Button
+          onClick={() => window.dispatchEvent(new Event('open-support-chat'))}
+          variant="outline"
+          size="sm"
+          className="w-full justify-start text-emerald-500 border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 hover:text-emerald-400"
+        >
+          <Headphones className="w-4 h-4 mr-2" />
+          Suporte Inteligente (IA)
+        </Button>
 
         <div className="flex items-center gap-2">
           <ThemeToggle />

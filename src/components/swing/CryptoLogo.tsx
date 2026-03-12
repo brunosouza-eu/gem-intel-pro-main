@@ -9,7 +9,7 @@ interface CryptoLogoProps {
 /**
  * Known CoinGecko image IDs for popular tokens.
  * CoinGecko image URLs follow the pattern:
- * https://assets.coingecko.com/coins/images/{ID}/small/{slug}.png
+ * https://coin-images.coingecko.com/coins/images/{ID}/small/{slug}.png
  */
 const COINGECKO_IDS: Record<string, { id: number; slug: string; ext?: string }> = {
   'BTC': { id: 1, slug: 'bitcoin' },
@@ -143,7 +143,7 @@ const getCryptoLogoUrl = (symbol: string): string => {
   const cg = COINGECKO_IDS[s];
   if (cg) {
     const ext = cg.ext || 'png';
-    return `https://assets.coingecko.com/coins/images/${cg.id}/small/${cg.slug}.${ext}`;
+    return `https://coin-images.coingecko.com/coins/images/${cg.id}/small/${cg.slug}.${ext}`;
   }
 
   // Primary fallback: CoinCap (works for most tickers)
